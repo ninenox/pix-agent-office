@@ -25,32 +25,32 @@ def get_anthropic_client():
 def get_openai_compatible_client(provider: str, base_url: str = None):
     """
     คืน OpenAI client สำหรับ provider ที่ใช้ OpenAI-compatible API:
-      - openai  → api_key จาก OPENAI_API_KEY, base_url default (api.openai.com)
+      - openai  → api_key จาก OPENAI_API_KEY, base_url default
       - ollama  → api_key="ollama", base_url=localhost:11434
-      - อื่นๆ   → base_url และ api_key จาก env PROVIDER_API_KEY
+      - อื่นๆ   → base_url และ api_key จาก env {PROVIDER}_API_KEY
     """
     from openai import OpenAI
 
     if provider == "openai":
-        api_key = os.environ.get("OPENAI_API_KEY", "")
-        return OpenAI(api_key=api_key, base_url=base_url or None)
+        return OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""), base_url=base_url or None)
 
     if provider == "ollama":
-        return OpenAI(
-            api_key="ollama",
-            base_url=base_url or "http://localhost:11434/v1",
-        )
+        return OpenAI(api_key="ollama", base_url=base_url or "http://localhost:11434/v1")
 
-    # generic OpenAI-compatible (เช่น LM Studio, Together AI ฯลฯ)
     env_key = f"{provider.upper()}_API_KEY"
-    api_key = os.environ.get(env_key, "none")
-    return OpenAI(api_key=api_key, base_url=base_url)
+    return OpenAI(api_key=os.environ.get(env_key, "none"), base_url=base_url)
 
 
 def load_team_config():
     """โหลดข้อมูลทีมจาก config/team.json"""
     with open(TEAM_CONFIG, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def build_system_prompt(agent_id: str, role: str, agent_config: dict) -> str:
+    """สร้าง system prompt — ใช้ system_prompt จาก config ถ้ามี ไม่งั้น fallback"""
+    return agent_config.get("system_prompt") or \
+        f"คุณคือ {role} ชื่อ {agent_id} ในทีม Claude Agent Office"
 
 
 def update_office(agent_id: str, status: str, detail: str):
@@ -78,24 +78,23 @@ def update_office(agent_id: str, status: str, detail: str):
     print(f"  [{agent_id}] {status}: {detail}")
 
 
-def _call_anthropic(agent_id: str, task: str, model: str, role: str) -> str:
+def _call_anthropic(system: str, task: str, model: str) -> str:
     client = get_anthropic_client()
     response = client.messages.create(
         model=model,
         max_tokens=4096,
-        system=f"คุณคือ {role} ชื่อ {agent_id} ในทีม Claude Agent Office",
+        system=system,
         messages=[{"role": "user", "content": task}],
     )
     return next((b.text for b in response.content if b.type == "text"), "")
 
 
-def _call_openai_compatible(agent_id: str, task: str, model: str, role: str,
-                             provider: str, base_url: str) -> str:
+def _call_openai_compatible(system: str, task: str, model: str, provider: str, base_url: str) -> str:
     client = get_openai_compatible_client(provider, base_url)
     response = client.chat.completions.create(
         model=model,
         messages=[
-            {"role": "system", "content": f"คุณคือ {role} ชื่อ {agent_id} ในทีม Claude Agent Office"},
+            {"role": "system", "content": system},
             {"role": "user",   "content": task},
         ],
     )
@@ -107,13 +106,13 @@ def run_agent(agent_id: str, task: str, model: str = None, role: str = None,
     """
     รัน agent เดี่ยว — รองรับ provider: anthropic | openai | ollama
     """
-    if not model or not role or not provider:
-        config = load_team_config()
-        agent_config = config.get(agent_id, {})
-        model    = model    or agent_config.get("model",    "claude-sonnet-4-6")
-        role     = role     or agent_config.get("role",     "AI assistant")
-        provider = provider or agent_config.get("provider", "anthropic")
-        base_url = base_url or agent_config.get("base_url")
+    config = load_team_config()
+    agent_config = config.get(agent_id, {})
+    model    = model    or agent_config.get("model",    "claude-sonnet-4-6")
+    role     = role     or agent_config.get("role",     "AI assistant")
+    provider = provider or agent_config.get("provider", "anthropic")
+    base_url = base_url or agent_config.get("base_url")
+    system   = build_system_prompt(agent_id, role, agent_config)
 
     try:
         update_office(agent_id, "thinking", "กำลังวิเคราะห์งาน...")
@@ -122,9 +121,9 @@ def run_agent(agent_id: str, task: str, model: str = None, role: str = None,
         update_office(agent_id, "researching", f"กำลังประมวลผล [{provider}]...")
 
         if provider == "anthropic":
-            result = _call_anthropic(agent_id, task, model, role)
+            result = _call_anthropic(system, task, model)
         else:
-            result = _call_openai_compatible(agent_id, task, model, role, provider, base_url)
+            result = _call_openai_compatible(system, task, model, provider, base_url)
 
         update_office(agent_id, "writing", "กำลังเขียนผลลัพธ์...")
         time.sleep(0.5)
@@ -143,13 +142,13 @@ def run_agent_stream(agent_id: str, task: str, model: str = None, role: str = No
     """
     รัน agent แบบ streaming — รองรับ provider: anthropic | openai | ollama
     """
-    if not model or not role or not provider:
-        config = load_team_config()
-        agent_config = config.get(agent_id, {})
-        model    = model    or agent_config.get("model",    "claude-sonnet-4-6")
-        role     = role     or agent_config.get("role",     "AI assistant")
-        provider = provider or agent_config.get("provider", "anthropic")
-        base_url = base_url or agent_config.get("base_url")
+    config = load_team_config()
+    agent_config = config.get(agent_id, {})
+    model    = model    or agent_config.get("model",    "claude-sonnet-4-6")
+    role     = role     or agent_config.get("role",     "AI assistant")
+    provider = provider or agent_config.get("provider", "anthropic")
+    base_url = base_url or agent_config.get("base_url")
+    system   = build_system_prompt(agent_id, role, agent_config)
 
     try:
         update_office(agent_id, "thinking", "กำลังคิด...")
@@ -160,7 +159,7 @@ def run_agent_stream(agent_id: str, task: str, model: str = None, role: str = No
             with client.messages.stream(
                 model=model,
                 max_tokens=4096,
-                system=f"คุณคือ {role} ชื่อ {agent_id}",
+                system=system,
                 messages=[{"role": "user", "content": task}],
             ) as stream:
                 update_office(agent_id, "writing", "กำลังเขียน...")
@@ -175,7 +174,7 @@ def run_agent_stream(agent_id: str, task: str, model: str = None, role: str = No
             with client.chat.completions.create(
                 model=model,
                 messages=[
-                    {"role": "system", "content": f"คุณคือ {role} ชื่อ {agent_id}"},
+                    {"role": "system", "content": system},
                     {"role": "user",   "content": task},
                 ],
                 stream=True,

@@ -5,7 +5,7 @@ Agent Tools — Agent ที่ใช้ tools ได้ (web search, write file
 import json
 import os
 import time
-from agent_runner import update_office, load_team_config, get_anthropic_client, get_openai_compatible_client
+from agent_runner import update_office, load_team_config, get_anthropic_client, get_openai_compatible_client, build_system_prompt
 
 # ─── Tool Definitions ───
 TOOLS = [
@@ -81,29 +81,29 @@ def run_agent_with_tools(agent_id: str, task: str, model: str = None, role: str 
     รัน agent ที่ใช้ tools ได้ — รองรับ provider: anthropic | ollama
     หมายเหตุ: ollama tool-use ขึ้นอยู่กับว่า model รองรับหรือไม่
     """
-    if not model or not role or not provider:
-        config = load_team_config()
-        agent_config = config.get(agent_id, {})
-        model = model or agent_config.get("model", "claude-sonnet-4-6")
-        role = role or agent_config.get("role", "AI assistant")
-        provider = provider or agent_config.get("provider", "anthropic")
-        base_url = base_url or agent_config.get("base_url", "http://localhost:11434/v1")
+    config = load_team_config()
+    agent_config = config.get(agent_id, {})
+    model    = model    or agent_config.get("model",    "claude-sonnet-4-6")
+    role     = role     or agent_config.get("role",     "AI assistant")
+    provider = provider or agent_config.get("provider", "anthropic")
+    base_url = base_url or agent_config.get("base_url")
+    system   = build_system_prompt(agent_id, role, agent_config)
 
     messages = [{"role": "user", "content": task}]
     update_office(agent_id, "thinking", "วิเคราะห์งาน...")
 
     # openai / ollama ใช้ OpenAI-compatible tools schema เหมือนกัน
     if provider != "anthropic":
-        return _run_with_tools_openai_compatible(agent_id, task, model, role, provider, base_url, max_turns)
+        return _run_with_tools_openai_compatible(agent_id, task, model, system, provider, base_url, max_turns)
 
-    # Anthropic path (เดิม)
+    # Anthropic path
     client = get_anthropic_client()
     for turn in range(max_turns):
         try:
             response = client.messages.create(
                 model=model,
                 max_tokens=4096,
-                system=f"คุณคือ {role} ชื่อ {agent_id}",
+                system=system,
                 tools=TOOLS,
                 messages=messages,
             )
@@ -188,13 +188,13 @@ TOOLS_OPENAI = [
 ]
 
 
-def _run_with_tools_openai_compatible(agent_id: str, task: str, model: str, role: str,
+def _run_with_tools_openai_compatible(agent_id: str, task: str, model: str, system: str,
                                        provider: str, base_url: str, max_turns: int):
     """OpenAI-compatible tool-use loop (openai / ollama / อื่นๆ)"""
     import json as _json
     client = get_openai_compatible_client(provider, base_url)
     messages = [
-        {"role": "system", "content": f"คุณคือ {role} ชื่อ {agent_id}"},
+        {"role": "system", "content": system},
         {"role": "user", "content": task},
     ]
 

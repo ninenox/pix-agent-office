@@ -404,6 +404,133 @@ function toggleSidebar() {
   btn.textContent = sb.classList.contains("hidden") ? "▶ Panel" : "◀ Panel";
 }
 
+/* ─── Mode Switching ─── */
+function switchMode(mode) {
+  document.getElementById("mode-manual").classList.toggle("hidden", mode !== "manual");
+  document.getElementById("mode-auto").classList.toggle("hidden", mode !== "auto");
+  document.getElementById("tab-manual").classList.toggle("active", mode === "manual");
+  document.getElementById("tab-auto").classList.toggle("active", mode === "auto");
+}
+
+/* ─── Brainstorm (AUTO mode) ─── */
+function handleBrainstormKey(event) {
+  if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    doBrainstorm();
+  }
+}
+
+async function doBrainstorm() {
+  const input = document.getElementById("brainstorm-input");
+  const task = input.value.trim();
+  if (!task) return;
+
+  const btn = document.getElementById("brainstorm-btn");
+  const badge = document.getElementById("task-running-badge");
+  const planEl = document.getElementById("brainstorm-plan");
+
+  btn.disabled = true;
+  btn.textContent = "⏳ Boss thinking...";
+  badge.classList.remove("hidden");
+  planEl.classList.add("hidden");
+  setBrainstormFeedback("✦ Boss กำลังวิเคราะห์งาน...", "#fbbf24");
+
+  // ส่ง agents ทุกตัวไป whiteboard
+  agents.forEach(a => {
+    const path = buildPath(a.x, a.y, "whiteboard");
+    const zone = ZONES["whiteboard"];
+    const jitter = () => (Math.random() - 0.5) * 28;
+    if (path.length > 0) path[path.length - 1] = { x: zone.x + jitter(), y: zone.y + jitter() };
+    a.status = "thinking";
+    a.detail = "Boss กำลังวิเคราะห์...";
+    a.waypoints = path;
+    a.bubbleText = "🧠";
+    a.bubbleTimer = 300;
+  });
+
+  try {
+    const res = await fetch("/brainstorm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setBrainstormFeedback(`✗ ${err.error || "Server error"}`, "#ef4444");
+      agents.forEach(a => { a.status = "idle"; a.waypoints = buildPath(a.x, a.y, "breakroom"); });
+      return;
+    }
+
+    const data = await res.json();
+    renderBrainstormPlan(data);
+
+    const assignedIds = new Set(data.assignments.map(a => a.agent_id));
+    agents.forEach(a => {
+      if (assignedIds.has(a.id)) {
+        a.bubbleText = "📋 รับงานแล้ว!";
+        a.bubbleTimer = 200;
+      } else {
+        a.status = "idle";
+        a.detail = "พักระหว่างรอทีม...";
+        a.waypoints = buildPath(a.x, a.y, "breakroom");
+        a.bubbleText = "☕";
+        a.bubbleTimer = 180;
+      }
+    });
+
+    const names = data.assignments.map(a => a.agent_id.replace("claude-", "")).join(", ");
+    setBrainstormFeedback(`✓ แบ่งงานให้: ${names}`, "#4ade80");
+
+    // log
+    data.assignments.forEach(({ agent_id, task: subtask }) => {
+      const a = agents.find(ag => ag.id === agent_id);
+      if (a) activityLogs.unshift({ time: new Date(), agent: a.name, color: a.color, status: "planning", detail: subtask });
+    });
+    if (activityLogs.length > 30) activityLogs.length = 30;
+
+  } catch (e) {
+    setBrainstormFeedback("✗ ไม่สามารถเชื่อมต่อ server", "#f59e0b");
+    agents.forEach(a => { a.status = "idle"; a.waypoints = buildPath(a.x, a.y, "breakroom"); });
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "✦ BRAINSTORM";
+    setTimeout(() => {
+      badge.classList.add("hidden");
+      setBrainstormFeedback("", "#6b7280");
+    }, 6000);
+  }
+}
+
+function setBrainstormFeedback(text, color) {
+  const el = document.getElementById("brainstorm-feedback");
+  if (el) { el.textContent = text; el.style.color = color; }
+}
+
+function renderBrainstormPlan(data) {
+  const planEl = document.getElementById("brainstorm-plan");
+  document.getElementById("plan-text").textContent = `Boss: ${data.plan}`;
+
+  const assignedMap = Object.fromEntries(data.assignments.map(a => [a.agent_id, a.task]));
+  document.getElementById("plan-assignments").innerHTML = agents.map(a => {
+    const task = assignedMap[a.id];
+    if (task) {
+      return `<div class="plan-row">
+        <span class="plan-dot" style="background:${a.color};box-shadow:0 0 4px ${a.color}"></span>
+        <span class="plan-name" style="color:${a.color}">${a.name.split(" ")[1]}</span>
+        <span class="plan-task">${task}</span>
+      </div>`;
+    }
+    return `<div class="plan-row idle">
+      <span class="plan-dot" style="background:#374151"></span>
+      <span class="plan-name" style="color:#4b5563">${a.name.split(" ")[1]}</span>
+      <span class="plan-task">☕ idle</span>
+    </div>`;
+  }).join("");
+
+  planEl.classList.remove("hidden");
+}
+
 /* ─── Task Dispatch Panel ─── */
 const TASK_DEFAULTS = {
   "claude-opus":   "วิเคราะห์แนวโน้ม AI ปี 2026...",

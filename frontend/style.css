@@ -278,6 +278,154 @@ body {
   font-size: 6px;
 }
 
+/* ─── Mode Tabs ─── */
+#task-mode-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #2d2640;
+  margin-bottom: 10px;
+}
+
+.task-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #4b5563;
+  font-family: inherit;
+  font-size: 7px;
+  padding: 6px 16px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.15s;
+  margin-bottom: -1px;
+}
+
+.task-tab:hover { color: #9ca3af; }
+.task-tab.active { color: #c4b5fd; border-bottom-color: #8b5cf6; }
+
+/* ─── AUTO Mode ─── */
+#auto-hint {
+  font-size: 6px;
+  color: #4b5563;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+#brainstorm-input {
+  width: 100%;
+  background: rgba(8, 8, 18, 0.9);
+  border: 1.5px solid #3a3355;
+  border-radius: 4px;
+  color: #d1d5db;
+  font-family: inherit;
+  font-size: 7px;
+  padding: 10px 12px;
+  resize: none;
+  height: 72px;
+  line-height: 1.8;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#brainstorm-input::placeholder { color: #374151; }
+#brainstorm-input:focus { border-color: #8b5cf6; color: #f3f4f6; }
+
+#auto-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+#brainstorm-feedback { font-size: 7px; color: #6b7280; flex: 1; letter-spacing: 0.5px; }
+
+#stop-all-btn-auto {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1.5px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  padding: 7px 14px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 7px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+#stop-all-btn-auto:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+}
+
+#brainstorm-btn {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border: 1.5px solid #7c3aed;
+  color: #e2e8f0;
+  padding: 7px 18px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 7px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+#brainstorm-btn:hover {
+  background: linear-gradient(135deg, #312e81 0%, #4c1d95 100%);
+  border-color: #a78bfa;
+  box-shadow: 0 0 16px rgba(139,92,246,0.5);
+}
+
+#brainstorm-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+/* ─── Plan Preview ─── */
+#brainstorm-plan {
+  background: rgba(20, 20, 36, 0.8);
+  border: 1px solid #3a3355;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#plan-text {
+  font-size: 6px;
+  color: #9ca3af;
+  font-style: italic;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #2d2640;
+  line-height: 1.6;
+}
+
+.plan-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 6px;
+  padding: 2px 0;
+}
+
+.plan-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.plan-name { flex-shrink: 0; min-width: 42px; }
+.plan-task { color: #9ca3af; line-height: 1.6; }
+.plan-row.idle { opacity: 0.35; }
+.plan-row.idle .plan-task { color: #374151; }
+
 /* ─── Task Dispatch Panel ─── */
 #task-panel {
   width: 100%;

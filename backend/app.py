@@ -115,6 +115,52 @@ def run_agents():
     return jsonify({"ok": True, "started": list(tasks.keys())})
 
 
+@app.route("/brainstorm", methods=["POST"])
+def brainstorm_route():
+    """Boss วิเคราะห์งาน → แบ่งให้ทีม (Phase 1 sync, Phase 2 async)"""
+    data = request.get_json()
+    if not data or "task" not in data:
+        return jsonify({"error": "task required"}), 400
+
+    user_task = data["task"].strip()
+    if not user_task:
+        return jsonify({"error": "task cannot be empty"}), 400
+
+    try:
+        from boss import analyze_task
+        plan = analyze_task(user_task)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": f"Boss error: {e}"}), 500
+
+    # Build tasks dict (assigned agents only)
+    tasks = {a["agent_id"]: a["task"] for a in plan["assignments"]}
+    assigned_ids = set(tasks.keys())
+
+    # ตั้ง idle ให้ agent ที่ไม่ได้รับงาน
+    from agent_runner import update_office, load_team_config
+    config = load_team_config()
+    for agent_id in config.keys():
+        if agent_id not in assigned_ids:
+            update_office(agent_id, "idle", "พักระหว่างรอทีม...")
+
+    # รัน team ใน background
+    def run_in_background():
+        from orchestrator import run_team
+        run_team(tasks)
+
+    t = threading.Thread(target=run_in_background, daemon=True)
+    t.start()
+
+    return jsonify({
+        "ok": True,
+        "plan": plan.get("plan", ""),
+        "assignments": plan["assignments"],
+        "idle_agents": [a for a in config.keys() if a not in assigned_ids],
+    })
+
+
 @app.route("/stop", methods=["POST"])
 def stop_agents():
     """หยุด agent และตั้งสถานะเป็น idle"""

@@ -1,4 +1,4 @@
-# Claude Agent Office 🏢
+# Pixel Agent Office 🏢
 
 > [🇬🇧 English](README.md)
 
@@ -16,8 +16,8 @@ Pixel-art office dashboard แสดง Claude AI team ทำงาน real-time
 ## Quick Start
 
 ```bash
-git clone https://github.com/ninenox/claude-agent-office.git
-cd claude-agent-office
+git clone https://github.com/ninenox/pixel-agent-office.git
+cd pixel-agent-office
 bash install.sh
 source .venv/bin/activate
 ```

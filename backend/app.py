@@ -54,6 +54,9 @@ def get_status():
 def update_status():
     """อัพเดทสถานะ agent ตัวเดียว"""
     data = request.get_json()
+    if not data:
+        return jsonify({"error": "JSON body required"}), 400
+
     agent_id = data.get("agent_id")
     status = data.get("status", "idle")
     detail = data.get("detail", "")

@@ -11,7 +11,7 @@ from filelock import FileLock
 STATE_FILE = os.path.join(os.path.dirname(__file__), "..", "state.json")
 TEAM_CONFIG = os.path.join(os.path.dirname(__file__), "..", "config", "team.json")
 
-client = anthropic.Anthropic()
+client = anthropic.Anthropic(timeout=60.0)
 
 
 def load_team_config():
@@ -59,7 +59,7 @@ def run_agent(agent_id: str, task: str, model: str = None, role: str = None):
     if not model or not role:
         config = load_team_config()
         agent_config = config.get(agent_id, {})
-        model = model or agent_config.get("model", "claude-sonnet-4-20250514")
+        model = model or agent_config.get("model", "claude-sonnet-4-6")
         role = role or agent_config.get("role", "AI assistant")
 
     try:
@@ -100,7 +100,7 @@ def run_agent_stream(agent_id: str, task: str, model: str = None, role: str = No
     if not model or not role:
         config = load_team_config()
         agent_config = config.get(agent_id, {})
-        model = model or agent_config.get("model", "claude-sonnet-4-20250514")
+        model = model or agent_config.get("model", "claude-sonnet-4-6")
         role = role or agent_config.get("role", "AI assistant")
 
     try:

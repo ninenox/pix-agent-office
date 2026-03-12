@@ -26,7 +26,7 @@ def run_team(tasks: dict, stream: bool = False):
 
     def worker(agent_id, task):
         agent_config = config.get(agent_id, {})
-        model = agent_config.get("model", "claude-sonnet-4-20250514")
+        model = agent_config.get("model", "claude-sonnet-4-6")
         role = agent_config.get("role", "AI assistant")
 
         try:

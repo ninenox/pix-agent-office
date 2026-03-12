@@ -63,9 +63,9 @@ function drawOffice(ctx) {
     drawRect(ctx, d.x+38, d.y+52, 44, 6, PAL.chair);
     drawRect(ctx, d.x+42, d.y+84, 6, 10, "#374151");
     drawRect(ctx, d.x+72, d.y+84, 6, 10, "#374151");
-    // Screen lines
+    // Screen lines (deterministic width per desk/line)
     for (let l = 0; l < 3; l++)
-      drawRect(ctx, d.x+38, d.y-23+l*6, 20+Math.random()*24, 2, "#1a1a2e");
+      drawRect(ctx, d.x+38, d.y-23+l*6, 20+(i*13+l*7)%24, 2, "#1a1a2e");
   });
 
   // Whiteboard
@@ -153,7 +153,7 @@ function render() {
   // Agents sorted by Y (depth)
   const sorted = [...agents].sort((a,b) => a.y - b.y);
   sorted.forEach(a => {
-    drawPixelChar(ctx, a, a.x, a.y, frame, a.facing);
+    drawPixelChar(ctx, a, a.x, a.y, frame);
     if (a.bubbleTimer > 0 && a.bubbleText) {
       ctx.globalAlpha = a.bubbleTimer < 30 ? a.bubbleTimer/30 : 1;
       drawBubble(ctx, a.x, a.y, a.bubbleText, a.color);

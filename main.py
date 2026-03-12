@@ -11,6 +11,11 @@ import sys
 import time
 import shutil
 
+_BASE = os.path.dirname(os.path.abspath(__file__))
+for _p in [os.path.join(_BASE, "backend"), os.path.join(_BASE, "agents")]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 STATE_FILE = os.path.join(os.path.dirname(__file__), "state.json")
 SAMPLE_FILE = os.path.join(os.path.dirname(__file__), "state.sample.json")
 TEAM_CONFIG = os.path.join(os.path.dirname(__file__), "config", "team.json")
@@ -25,14 +30,12 @@ def init_state():
 
 def start_server():
     """เริ่ม Flask backend"""
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
     from app import app
     app.run(host="0.0.0.0", port=19000, debug=False)
 
 
 def start_agents(task_file=None):
     """เริ่ม agent orchestrator"""
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "agents"))
     from orchestrator import run_team
 
     if task_file:

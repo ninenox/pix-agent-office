@@ -29,8 +29,10 @@ def route_and_run(user_request: str):
 
     update_office("router", "thinking", "Boss กำลังวิเคราะห์งาน...")
 
+    router_model = config.get("claude-sonnet", {}).get("model", "claude-sonnet-4-6")
+
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model=router_model,
         max_tokens=2048,
         system=f"""คุณคือ Team Lead ของ Claude Agent Office
 มีลูกทีมดังนี้:
@@ -54,10 +56,11 @@ def route_and_run(user_request: str):
 
     # Parse response
     try:
-        text = response.content[0].text
-        text = text.strip()
+        text = response.content[0].text.strip()
         if text.startswith("```"):
-            text = text.split("\n", 1)[1].rsplit("```", 1)[0]
+            lines = text.split("\n")
+            if len(lines) > 1:
+                text = "\n".join(lines[1:]).rsplit("```", 1)[0].strip()
         plan = json.loads(text)
     except (json.JSONDecodeError, IndexError) as e:
         update_office("router", "error", f"Parse error: {e}")

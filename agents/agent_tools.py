@@ -8,7 +8,7 @@ import os
 import time
 from agent_runner import update_office, load_team_config
 
-client = anthropic.Anthropic()
+client = anthropic.Anthropic(timeout=60.0)
 
 # ─── Tool Definitions ───
 TOOLS = [
@@ -60,18 +60,20 @@ def execute_tool(name: str, input_data: dict) -> str:
 
     elif name == "write_file":
         os.makedirs(OUTPUT_DIR, exist_ok=True)
-        filepath = os.path.join(OUTPUT_DIR, input_data["filename"])
+        safe_name = os.path.basename(input_data["filename"])
+        filepath = os.path.join(OUTPUT_DIR, safe_name)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(input_data["content"])
-        return f"เขียนไฟล์ {input_data['filename']} สำเร็จ ({len(input_data['content'])} chars)"
+        return f"เขียนไฟล์ {safe_name} สำเร็จ ({len(input_data['content'])} chars)"
 
     elif name == "read_file":
-        filepath = os.path.join(OUTPUT_DIR, input_data["filename"])
+        safe_name = os.path.basename(input_data["filename"])
+        filepath = os.path.join(OUTPUT_DIR, safe_name)
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 return f.read()[:2000]
         except FileNotFoundError:
-            return f"ไม่พบไฟล์ {input_data['filename']}"
+            return f"ไม่พบไฟล์ {safe_name}"
 
     return f"Unknown tool: {name}"
 
@@ -83,7 +85,7 @@ def run_agent_with_tools(agent_id: str, task: str, model: str = None, role: str 
     if not model or not role:
         config = load_team_config()
         agent_config = config.get(agent_id, {})
-        model = model or agent_config.get("model", "claude-sonnet-4-20250514")
+        model = model or agent_config.get("model", "claude-sonnet-4-6")
         role = role or agent_config.get("role", "AI assistant")
 
     messages = [{"role": "user", "content": task}]
@@ -102,34 +104,26 @@ def run_agent_with_tools(agent_id: str, task: str, model: str = None, role: str 
             update_office(agent_id, "error", f"API error: {str(e)[:50]}")
             return None
 
-        # ตรวจสอบ tool_use blocks
-        has_tool_use = False
+        # ตรวจสอบ tool_use blocks (รองรับหลาย tools พร้อมกัน)
+        tool_results = []
         assistant_content = response.content
 
         for block in response.content:
             if block.type == "tool_use":
-                has_tool_use = True
-                tool_name = block.name
-                tool_input = block.input
-
-                update_office(agent_id, "coding", f"ใช้ {tool_name}...")
+                update_office(agent_id, "coding", f"ใช้ {block.name}...")
                 time.sleep(0.3)
-
-                result = execute_tool(tool_name, tool_input)
-
-                # เพิ่ม assistant message + tool result
-                messages.append({"role": "assistant", "content": assistant_content})
-                messages.append({
-                    "role": "user",
-                    "content": [{
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": result,
-                    }],
+                result = execute_tool(block.name, block.input)
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": result,
                 })
-                break  # ออกจาก for แล้ววนรอบใหม่
 
-        if not has_tool_use:
+        if tool_results:
+            messages.append({"role": "assistant", "content": assistant_content})
+            messages.append({"role": "user", "content": tool_results})
+
+        if not tool_results:
             # ตอบเสร็จแล้ว
             final_text = ""
             for block in response.content:

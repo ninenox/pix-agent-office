@@ -1,7 +1,10 @@
 # Claude Agent Office 🏢
 
 Pixel-art office dashboard แสดง Claude AI team ทำงาน real-time
-แต่ละ agent เดินไปโซนต่างๆ (โต๊ะ, กระดาน, break room) ตามสถานะงาน พร้อม waypoint pathfinding หลบกำแพงห้อง
+แต่ละ agent เดินไปโซนต่างๆ (โต๊ะ, กระดาน, break room) ตามสถานะงาน 
+มี 2 Mode:
+1) Manual สั่งงาน agent ทีล่ะตัว
+2) Auto สั่งงานครั้งเดียว agent จะประชุมและแบ่งงานกันทำเองตามเหมาะสม
 
 ![Claude Agent Office](images/example.png)
 

@@ -210,3 +210,5 @@ __marimo__/
 # Runtime outputs and state
 outputs/
 state.json
+
+.DS_Store

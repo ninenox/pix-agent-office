@@ -79,7 +79,7 @@ def run_agent(agent_id: str, task: str, model: str = None, role: str = None):
 
         # ขั้น 3: เขียนผลลัพธ์
         update_office(agent_id, "writing", "กำลังเขียนผลลัพธ์...")
-        result = response.content[0].text
+        result = next((b.text for b in response.content if b.type == "text"), "")
         time.sleep(0.5)
 
         # ขั้น 4: เสร็จ
@@ -89,7 +89,8 @@ def run_agent(agent_id: str, task: str, model: str = None, role: str = None):
         return result
 
     except Exception as e:
-        update_office(agent_id, "error", f"ผิดพลาด: {str(e)[:60]}")
+        print(f"\n  [{agent_id}] FULL ERROR: {e}")
+        update_office(agent_id, "error", f"ผิดพลาด: {str(e)[:80]}")
         return None
 
 
@@ -125,7 +126,8 @@ def run_agent_stream(agent_id: str, task: str, model: str = None, role: str = No
         return full_text
 
     except Exception as e:
-        update_office(agent_id, "error", f"ผิดพลาด: {str(e)[:60]}")
+        print(f"\n  [{agent_id}] FULL ERROR: {e}")
+        update_office(agent_id, "error", f"ผิดพลาด: {str(e)[:80]}")
         return None
 
 

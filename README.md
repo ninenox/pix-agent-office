@@ -18,20 +18,49 @@ Each Claude agent appears as a pixel character that walks between office zones (
 
 ## Installation
 
+**Prerequisites:** Python 3.10+, macOS หรือ Linux
+
 ```bash
 git clone https://github.com/ninenox/claude-agent-office.git
 cd claude-agent-office
 bash install.sh
 ```
 
-`install.sh` จะตรวจสอบ Python, สร้าง `.venv`, ติดตั้ง dependencies และสร้าง `state.json` ให้อัตโนมัติ
-(ใช้ `uv` ถ้ามี ไม่งั้น fallback เป็น `pip`)
+script จะทำขั้นตอนต่อไปนี้อัตโนมัติ:
+
+1. ตรวจสอบ OS และ Python version (ต้องการ 3.10+)
+2. ใช้ `uv` ถ้ามีติดตั้งอยู่ ไม่งั้น fallback เป็น `pip`
+3. สร้าง `.venv` (virtual environment)
+4. ติดตั้ง dependencies จาก `backend/requirements.txt`
+5. สร้าง `state.json` จาก template
+6. แจ้งเตือนถ้ายังไม่มี `ANTHROPIC_API_KEY`
+
+**ตัวอย่าง output เมื่อติดตั้งสำเร็จ:**
+
+```
+🏢 Claude Agent Office — Setup
+
+  ✓ OS: macOS
+  ✓ Python 3.12
+  ⚠ ไม่พบ uv — จะใช้ pip แทน
+  ✓ สร้าง .venv เรียบร้อย
+  ✓ Activated: .venv
+  ✓ ติดตั้ง dependencies เสร็จแล้ว
+  ✓ สร้าง state.json จาก template
+
+  ⚠ ยังไม่มี ANTHROPIC_API_KEY — รันได้แค่ demo mode
+
+✅ ติดตั้งสำเร็จ!
+```
 
 หลังติดตั้ง ให้ activate venv ก่อนใช้งานทุกครั้ง:
 
 ```bash
 source .venv/bin/activate
 ```
+
+> **ต้องการ API key หรือไม่?** — ไม่จำเป็นสำหรับ demo mode
+> สำหรับ full mode ให้ตั้งค่า: `export ANTHROPIC_API_KEY=sk-ant-...`
 
 ---
 

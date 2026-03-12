@@ -29,15 +29,8 @@
   <div id="main">
     <!-- Canvas Area -->
     <div id="canvas-area">
-      <!-- Agent Cards -->
-      <div id="agent-cards"></div>
-      <!-- Pixel Office Canvas -->
-      <div id="canvas-wrap">
-        <canvas id="office" width="800" height="560"></canvas>
-        <div id="zone-labels"></div>
-      </div>
 
-      <!-- Task Dispatch Panel -->
+      <!-- Task Dispatch Panel (top) -->
       <div id="task-panel">
         <div id="task-panel-header" onclick="toggleTaskPanel()">
           <div class="task-panel-title">
@@ -46,9 +39,9 @@
             <span id="task-running-badge" class="hidden">● RUNNING</span>
           </div>
           <div id="task-panel-meta">พิมพ์งานแล้วกด DISPATCH</div>
-          <button id="task-panel-toggle">▲</button>
+          <button id="task-panel-toggle">▼</button>
         </div>
-        <div id="task-panel-body">
+        <div id="task-panel-body" class="hidden">
           <!-- Mode tabs -->
           <div id="task-mode-tabs">
             <button class="task-tab active" id="tab-manual" onclick="switchMode('manual')">⚙ MANUAL</button>
@@ -68,7 +61,7 @@
           </div>
 
           <!-- AUTO pane -->
-          <div id="mode-auto" class="hidden">
+          <div id="mode-auto" style="display:none">
             <div id="auto-hint">Boss วิเคราะห์งานและแจกให้ทีมอัตโนมัติ — ทุกคนไปประชุมที่ whiteboard ก่อน</div>
             <textarea id="brainstorm-input"
               placeholder="อธิบายงานที่ต้องการ... Boss จะวิเคราะห์และแบ่งงานให้ทีมเอง"
@@ -78,12 +71,20 @@
               <button id="stop-all-btn-auto" onclick="stopAll()">■ STOP ALL</button>
               <button id="brainstorm-btn" onclick="doBrainstorm()">✦ BRAINSTORM</button>
             </div>
-            <div id="brainstorm-plan" class="hidden">
+            <div id="brainstorm-plan" style="display:none">
               <div id="plan-text"></div>
               <div id="plan-assignments"></div>
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Agent Cards -->
+      <div id="agent-cards"></div>
+      <!-- Pixel Office Canvas -->
+      <div id="canvas-wrap">
+        <canvas id="office" width="800" height="560"></canvas>
+        <div id="zone-labels"></div>
       </div>
     </div>
 

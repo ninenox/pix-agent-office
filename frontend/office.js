@@ -406,8 +406,8 @@ function toggleSidebar() {
 
 /* ─── Mode Switching ─── */
 function switchMode(mode) {
-  document.getElementById("mode-manual").classList.toggle("hidden", mode !== "manual");
-  document.getElementById("mode-auto").classList.toggle("hidden", mode !== "auto");
+  document.getElementById("mode-manual").style.display = mode === "manual" ? "" : "none";
+  document.getElementById("mode-auto").style.display   = mode === "auto"   ? "" : "none";
   document.getElementById("tab-manual").classList.toggle("active", mode === "manual");
   document.getElementById("tab-auto").classList.toggle("active", mode === "auto");
 }
@@ -432,7 +432,7 @@ async function doBrainstorm() {
   btn.disabled = true;
   btn.textContent = "⏳ Boss thinking...";
   badge.classList.remove("hidden");
-  planEl.classList.add("hidden");
+  planEl.style.display = "none";
   setBrainstormFeedback("✦ Boss กำลังวิเคราะห์งาน...", "#fbbf24");
 
   // ส่ง agents ทุกตัวไป whiteboard
@@ -528,7 +528,7 @@ function renderBrainstormPlan(data) {
     </div>`;
   }).join("");
 
-  planEl.classList.remove("hidden");
+  planEl.style.display = "";
 }
 
 /* ─── Task Dispatch Panel ─── */
@@ -680,8 +680,8 @@ async function stopAll() {
 function toggleTaskPanel() {
   const body = document.getElementById("task-panel-body");
   const toggle = document.getElementById("task-panel-toggle");
-  body.classList.toggle("hidden");
-  toggle.textContent = body.classList.contains("hidden") ? "▼" : "▲";
+  const isHidden = body.classList.toggle("hidden");
+  toggle.textContent = isHidden ? "▼" : "▲";
 }
 
 /* ─── Init ─── */

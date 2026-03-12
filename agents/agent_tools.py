@@ -7,9 +7,7 @@ import httpx
 import json
 import os
 import time
-from agent_runner import update_office, load_team_config
-
-client = anthropic.Anthropic(timeout=httpx.Timeout(600.0, connect=10.0))
+from agent_runner import update_office, load_team_config, get_anthropic_client, get_ollama_client
 
 # ─── Tool Definitions ───
 TOOLS = [
@@ -79,19 +77,29 @@ def execute_tool(name: str, input_data: dict) -> str:
     return f"Unknown tool: {name}"
 
 
-def run_agent_with_tools(agent_id: str, task: str, model: str = None, role: str = None, max_turns: int = 10):
+def run_agent_with_tools(agent_id: str, task: str, model: str = None, role: str = None,
+                         provider: str = None, base_url: str = None, max_turns: int = 10):
     """
-    รัน agent ที่ใช้ tools ได้ — วนลูปจนกว่า Claude จะตอบเสร็จ
+    รัน agent ที่ใช้ tools ได้ — รองรับ provider: anthropic | ollama
+    หมายเหตุ: ollama tool-use ขึ้นอยู่กับว่า model รองรับหรือไม่
     """
-    if not model or not role:
+    if not model or not role or not provider:
         config = load_team_config()
         agent_config = config.get(agent_id, {})
         model = model or agent_config.get("model", "claude-sonnet-4-6")
         role = role or agent_config.get("role", "AI assistant")
+        provider = provider or agent_config.get("provider", "anthropic")
+        base_url = base_url or agent_config.get("base_url", "http://localhost:11434/v1")
 
     messages = [{"role": "user", "content": task}]
     update_office(agent_id, "thinking", "วิเคราะห์งาน...")
 
+    # Ollama: tool-use format ต่างกัน — ใช้ OpenAI tools schema
+    if provider == "ollama":
+        return _run_with_tools_ollama(agent_id, task, model, role, base_url, max_turns)
+
+    # Anthropic path (เดิม)
+    client = get_anthropic_client()
     for turn in range(max_turns):
         try:
             response = client.messages.create(
@@ -131,8 +139,100 @@ def run_agent_with_tools(agent_id: str, task: str, model: str = None, role: str 
                 if block.type == "text":
                     final_text += block.text
 
-            update_office(agent_id, "idle", f"เสร็จแล้ว ✓ (turn {turn + 1})")
+            update_office(agent_id, "idle", f"เสร็จแล้ว ✓ (turn {turn + 1}) [anthropic]")
             return final_text
+
+    update_office(agent_id, "error", "เกิน max turns")
+    return None
+
+
+# OpenAI-compatible tools schema สำหรับ ollama
+TOOLS_OPENAI = [
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": "ค้นหาข้อมูลบนเว็บ",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string"}},
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "write_file",
+            "description": "เขียนไฟล์ผลลัพธ์",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string"},
+                    "content": {"type": "string"},
+                },
+                "required": ["filename", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_file",
+            "description": "อ่านไฟล์",
+            "parameters": {
+                "type": "object",
+                "properties": {"filename": {"type": "string"}},
+                "required": ["filename"],
+            },
+        },
+    },
+]
+
+
+def _run_with_tools_ollama(agent_id: str, task: str, model: str, role: str,
+                            base_url: str, max_turns: int):
+    """Ollama tool-use loop (OpenAI-compatible)"""
+    import json as _json
+    client = get_ollama_client(base_url)
+    messages = [
+        {"role": "system", "content": f"คุณคือ {role} ชื่อ {agent_id}"},
+        {"role": "user", "content": task},
+    ]
+
+    for turn in range(max_turns):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                tools=TOOLS_OPENAI,
+            )
+        except Exception as e:
+            update_office(agent_id, "error", f"API error: {str(e)[:50]}")
+            return None
+
+        msg = response.choices[0].message
+        tool_calls = msg.tool_calls or []
+
+        if not tool_calls:
+            update_office(agent_id, "idle", f"เสร็จแล้ว ✓ (turn {turn + 1}) [ollama]")
+            return msg.content or ""
+
+        # รัน tools แล้วเพิ่มผลลัพธ์กลับ
+        messages.append({"role": "assistant", "content": msg.content, "tool_calls": tool_calls})
+        for tc in tool_calls:
+            update_office(agent_id, "coding", f"ใช้ {tc.function.name}...")
+            time.sleep(0.3)
+            try:
+                args = _json.loads(tc.function.arguments)
+            except Exception:
+                args = {}
+            result = execute_tool(tc.function.name, args)
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc.id,
+                "content": result,
+            })
 
     update_office(agent_id, "error", "เกิน max turns")
     return None

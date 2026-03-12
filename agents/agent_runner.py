@@ -1,5 +1,5 @@
 """
-Agent Runner — เรียก Claude API แล้วอัพเดทสถานะลง state.json
+Agent Runner — เรียก Claude API หรือ Ollama แล้วอัพเดทสถานะลง state.json
 """
 
 import anthropic
@@ -12,7 +12,19 @@ from filelock import FileLock
 STATE_FILE = os.path.join(os.path.dirname(__file__), "..", "state.json")
 TEAM_CONFIG = os.path.join(os.path.dirname(__file__), "..", "config", "team.json")
 
-client = anthropic.Anthropic(timeout=httpx.Timeout(600.0, connect=10.0))
+_anthropic_client = None
+
+
+def get_anthropic_client():
+    global _anthropic_client
+    if _anthropic_client is None:
+        _anthropic_client = anthropic.Anthropic(timeout=httpx.Timeout(600.0, connect=10.0))
+    return _anthropic_client
+
+
+def get_ollama_client(base_url: str = "http://localhost:11434/v1"):
+    from openai import OpenAI
+    return OpenAI(base_url=base_url, api_key="ollama")
 
 
 def load_team_config():
@@ -46,47 +58,57 @@ def update_office(agent_id: str, status: str, detail: str):
     print(f"  [{agent_id}] {status}: {detail}")
 
 
-def run_agent(agent_id: str, task: str, model: str = None, role: str = None):
-    """
-    รัน agent เดี่ยว — เรียก Claude API แล้วรายงานสถานะ
+def _call_anthropic(agent_id: str, task: str, model: str, role: str) -> str | None:
+    client = get_anthropic_client()
+    response = client.messages.create(
+        model=model,
+        max_tokens=4096,
+        system=f"คุณคือ {role} ชื่อ {agent_id} ในทีม Claude Agent Office",
+        messages=[{"role": "user", "content": task}],
+    )
+    return next((b.text for b in response.content if b.type == "text"), "")
 
-    Args:
-        agent_id: ชื่อ agent เช่น "claude-opus"
-        task: งานที่ต้องทำ
-        model: model ที่ใช้ (ถ้าไม่ระบุจะอ่านจาก config)
-        role: บทบาท (ถ้าไม่ระบุจะอ่านจาก config)
+
+def _call_ollama(agent_id: str, task: str, model: str, role: str, base_url: str) -> str | None:
+    client = get_ollama_client(base_url)
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": f"คุณคือ {role} ชื่อ {agent_id} ในทีม Claude Agent Office"},
+            {"role": "user", "content": task},
+        ],
+    )
+    return response.choices[0].message.content or ""
+
+
+def run_agent(agent_id: str, task: str, model: str = None, role: str = None,
+              provider: str = None, base_url: str = None):
     """
-    # โหลด config ถ้าไม่ได้ระบุ
-    if not model or not role:
+    รัน agent เดี่ยว — รองรับ provider: anthropic | ollama
+    """
+    if not model or not role or not provider:
         config = load_team_config()
         agent_config = config.get(agent_id, {})
         model = model or agent_config.get("model", "claude-sonnet-4-6")
         role = role or agent_config.get("role", "AI assistant")
+        provider = provider or agent_config.get("provider", "anthropic")
+        base_url = base_url or agent_config.get("base_url", "http://localhost:11434/v1")
 
     try:
-        # ขั้น 1: คิด
         update_office(agent_id, "thinking", "กำลังวิเคราะห์งาน...")
         time.sleep(0.5)
 
-        # ขั้น 2: เรียก API
-        update_office(agent_id, "researching", "กำลังประมวลผล...")
+        update_office(agent_id, "researching", f"กำลังประมวลผล [{provider}]...")
 
-        response = client.messages.create(
-            model=model,
-            max_tokens=4096,
-            system=f"คุณคือ {role} ชื่อ {agent_id} ในทีม Claude Agent Office",
-            messages=[{"role": "user", "content": task}],
-        )
+        if provider == "ollama":
+            result = _call_ollama(agent_id, task, model, role, base_url)
+        else:
+            result = _call_anthropic(agent_id, task, model, role)
 
-        # ขั้น 3: เขียนผลลัพธ์ (รองรับ thinking blocks)
         update_office(agent_id, "writing", "กำลังเขียนผลลัพธ์...")
-        result = next((b.text for b in response.content if b.type == "text"), "")
         time.sleep(0.5)
 
-        # ขั้น 4: เสร็จ
-        tokens = response.usage.input_tokens + response.usage.output_tokens
-        update_office(agent_id, "idle", f"เสร็จแล้ว ✓ ({tokens} tokens)")
-
+        update_office(agent_id, "idle", f"เสร็จแล้ว ✓ [{provider}]")
         return result
 
     except Exception as e:
@@ -95,35 +117,57 @@ def run_agent(agent_id: str, task: str, model: str = None, role: str = None):
         return None
 
 
-def run_agent_stream(agent_id: str, task: str, model: str = None, role: str = None):
+def run_agent_stream(agent_id: str, task: str, model: str = None, role: str = None,
+                     provider: str = None, base_url: str = None):
     """
-    รัน agent แบบ streaming — อัพเดทสถานะ real-time ขณะ Claude พิมพ์
+    รัน agent แบบ streaming — รองรับ provider: anthropic | ollama
     """
-    if not model or not role:
+    if not model or not role or not provider:
         config = load_team_config()
         agent_config = config.get(agent_id, {})
         model = model or agent_config.get("model", "claude-sonnet-4-6")
         role = role or agent_config.get("role", "AI assistant")
+        provider = provider or agent_config.get("provider", "anthropic")
+        base_url = base_url or agent_config.get("base_url", "http://localhost:11434/v1")
 
     try:
         update_office(agent_id, "thinking", "กำลังคิด...")
 
-        with client.messages.stream(
-            model=model,
-            max_tokens=4096,
-            system=f"คุณคือ {role} ชื่อ {agent_id}",
-            messages=[{"role": "user", "content": task}],
-        ) as stream:
-
+        if provider == "ollama":
+            client = get_ollama_client(base_url)
             update_office(agent_id, "writing", "กำลังเขียน...")
             full_text = ""
-            for text in stream.text_stream:
-                full_text += text
-                if len(full_text) % 80 < 5:
-                    preview = full_text[-40:].replace("\n", " ")
-                    update_office(agent_id, "writing", f"...{preview}")
+            with client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": f"คุณคือ {role} ชื่อ {agent_id}"},
+                    {"role": "user", "content": task},
+                ],
+                stream=True,
+            ) as stream:
+                for chunk in stream:
+                    text = chunk.choices[0].delta.content or ""
+                    full_text += text
+                    if len(full_text) % 80 < 5:
+                        preview = full_text[-40:].replace("\n", " ")
+                        update_office(agent_id, "writing", f"...{preview}")
+        else:
+            anthropic_client = get_anthropic_client()
+            with anthropic_client.messages.stream(
+                model=model,
+                max_tokens=4096,
+                system=f"คุณคือ {role} ชื่อ {agent_id}",
+                messages=[{"role": "user", "content": task}],
+            ) as stream:
+                update_office(agent_id, "writing", "กำลังเขียน...")
+                full_text = ""
+                for text in stream.text_stream:
+                    full_text += text
+                    if len(full_text) % 80 < 5:
+                        preview = full_text[-40:].replace("\n", " ")
+                        update_office(agent_id, "writing", f"...{preview}")
 
-        update_office(agent_id, "idle", f"เสร็จ ({len(full_text)} chars)")
+        update_office(agent_id, "idle", f"เสร็จ ({len(full_text)} chars) [{provider}]")
         return full_text
 
     except Exception as e:

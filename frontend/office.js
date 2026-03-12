@@ -265,20 +265,24 @@ function render() {
 }
 
 /* ─── Poll Server Status ─── */
+let serverOnline = false;
+
 async function fetchStatus() {
   try {
     const res = await fetch("/status");
     if (res.ok) {
       const data = await res.json();
+      serverOnline = true;
       applyServerState(data);
     }
   } catch (e) {
-    // Server ไม่พร้อม — ใช้ demo mode
+    serverOnline = false;
   }
 }
 
-/* ─── Demo Mode (auto-simulate when no server) ─── */
+/* ─── Demo Mode (only when server is offline) ─── */
 function demoTick() {
+  if (serverOnline) return;
   const statuses = Object.keys(STATUS_TO_ZONE);
   agents.forEach(a => {
     if (Math.random() < 0.15) {

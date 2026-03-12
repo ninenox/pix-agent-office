@@ -2,12 +2,10 @@
 Agent Tools — Agent ที่ใช้ tools ได้ (web search, write file, etc.)
 """
 
-import anthropic
-import httpx
 import json
 import os
 import time
-from agent_runner import update_office, load_team_config, get_anthropic_client, get_ollama_client
+from agent_runner import update_office, load_team_config, get_anthropic_client, get_openai_compatible_client
 
 # ─── Tool Definitions ───
 TOOLS = [
@@ -94,9 +92,9 @@ def run_agent_with_tools(agent_id: str, task: str, model: str = None, role: str 
     messages = [{"role": "user", "content": task}]
     update_office(agent_id, "thinking", "วิเคราะห์งาน...")
 
-    # Ollama: tool-use format ต่างกัน — ใช้ OpenAI tools schema
-    if provider == "ollama":
-        return _run_with_tools_ollama(agent_id, task, model, role, base_url, max_turns)
+    # openai / ollama ใช้ OpenAI-compatible tools schema เหมือนกัน
+    if provider != "anthropic":
+        return _run_with_tools_openai_compatible(agent_id, task, model, role, provider, base_url, max_turns)
 
     # Anthropic path (เดิม)
     client = get_anthropic_client()
@@ -190,11 +188,11 @@ TOOLS_OPENAI = [
 ]
 
 
-def _run_with_tools_ollama(agent_id: str, task: str, model: str, role: str,
-                            base_url: str, max_turns: int):
-    """Ollama tool-use loop (OpenAI-compatible)"""
+def _run_with_tools_openai_compatible(agent_id: str, task: str, model: str, role: str,
+                                       provider: str, base_url: str, max_turns: int):
+    """OpenAI-compatible tool-use loop (openai / ollama / อื่นๆ)"""
     import json as _json
-    client = get_ollama_client(base_url)
+    client = get_openai_compatible_client(provider, base_url)
     messages = [
         {"role": "system", "content": f"คุณคือ {role} ชื่อ {agent_id}"},
         {"role": "user", "content": task},
@@ -215,7 +213,7 @@ def _run_with_tools_ollama(agent_id: str, task: str, model: str, role: str,
         tool_calls = msg.tool_calls or []
 
         if not tool_calls:
-            update_office(agent_id, "idle", f"เสร็จแล้ว ✓ (turn {turn + 1}) [ollama]")
+            update_office(agent_id, "idle", f"เสร็จแล้ว ✓ (turn {turn + 1}) [{provider}]")
             return msg.content or ""
 
         # รัน tools แล้วเพิ่มผลลัพธ์กลับ

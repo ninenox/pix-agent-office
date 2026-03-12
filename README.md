@@ -21,7 +21,16 @@ Each Claude agent appears as a pixel character that walks between office zones (
 ```bash
 git clone https://github.com/ninenox/claude-agent-office.git
 cd claude-agent-office
-pip install -r backend/requirements.txt
+bash install.sh
+```
+
+`install.sh` จะตรวจสอบ Python, สร้าง `.venv`, ติดตั้ง dependencies และสร้าง `state.json` ให้อัตโนมัติ
+(ใช้ `uv` ถ้ามี ไม่งั้น fallback เป็น `pip`)
+
+หลังติดตั้ง ให้ activate venv ก่อนใช้งานทุกครั้ง:
+
+```bash
+source .venv/bin/activate
 ```
 
 ---
@@ -83,15 +92,6 @@ python main.py --tasks my_tasks.json
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 
-python -c "
-from agents.router import route_and_run
-route_and_run('สร้าง landing page สำหรับ SaaS product พร้อม copywriting และ technical spec')
-"
-```
-
-หรือรันตรงจาก directory `agents/`:
-
-```bash
 cd agents
 python router.py "วิเคราะห์และออกแบบระบบ e-commerce ทั้งหมด"
 ```

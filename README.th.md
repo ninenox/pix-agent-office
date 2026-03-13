@@ -9,7 +9,7 @@ Pixel-art office dashboard แสดง Claude AI team ทำงาน real-time
 - **Manual** — สั่งงาน agent ทีละตัว
 - **Auto** — อธิบายงานครั้งเดียว Boss AI วิเคราะห์และแจกงานให้ทีมเอง
 
-![Claude Agent Office](examples/example.gif)
+<img src="examples/example.gif" width="100%" alt="Claude Agent Office">
 
 ---
 

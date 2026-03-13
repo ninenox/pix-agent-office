@@ -9,7 +9,7 @@ Each agent walks to different zones (desk, whiteboard, break room) based on thei
 - **Manual** — assign tasks to each agent individually
 - **Auto** — describe a goal once; the Boss AI analyzes and distributes work automatically
 
-![Claude Agent Office](examples/example.gif)
+<img src="examples/example.gif" width="100%" alt="Claude Agent Office">
 
 ---
 

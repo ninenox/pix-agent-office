@@ -85,6 +85,7 @@ async function loadAgentsFromServer() {
       waypoints: [],
       status: "idle",
       detail: "",
+      output: "",
       facing: "right",
       isWalking: false,
       bubbleText: "",
@@ -191,6 +192,7 @@ function applyServerState(serverState) {
     const oldStatus = agent.status;
     agent.status = data.status || "idle";
     agent.detail = data.detail || "";
+    if (data.output !== undefined) agent.output = data.output;
 
     // ถ้าสถานะเปลี่ยน → เดินไปโซนใหม่
     if (oldStatus !== agent.status) {

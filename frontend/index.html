@@ -27,64 +27,77 @@
 
   <!-- Main -->
   <div id="main">
-    <!-- Canvas Area -->
-    <div id="canvas-area">
-
-      <!-- Task Dispatch Panel (top) -->
-      <div id="task-panel">
-        <div id="task-panel-header" onclick="toggleTaskPanel()">
-          <div class="task-panel-title">
-            <span class="task-panel-icon">⚡</span>
-            <span>TASK DISPATCH</span>
-            <span id="task-running-badge" class="hidden">● RUNNING</span>
-          </div>
-          <div id="task-panel-meta">พิมพ์งานแล้วกด DISPATCH</div>
-          <button id="task-panel-toggle">▼</button>
+    <!-- Left: Task Dispatch Panel -->
+    <div id="task-panel">
+      <div id="task-panel-header" onclick="toggleTaskPanel()">
+        <div class="task-panel-title">
+          <span class="task-panel-icon">⚡</span>
+          <span>TASK DISPATCH</span>
+          <span id="task-running-badge" class="hidden">● RUNNING</span>
         </div>
-        <div id="task-panel-body" class="hidden">
-          <!-- Mode tabs -->
-          <div id="task-mode-tabs">
-            <button class="task-tab active" id="tab-manual" onclick="switchMode('manual')">⚙ MANUAL</button>
-            <button class="task-tab" id="tab-auto" onclick="switchMode('auto')">✦ AUTO</button>
-          </div>
+        <button id="task-panel-toggle">▲</button>
+      </div>
+      <div id="task-panel-body">
+        <!-- Mode tabs -->
+        <div id="task-mode-tabs">
+          <button class="task-tab active" id="tab-manual" onclick="switchMode('manual')">⚙ MANUAL</button>
+          <button class="task-tab" id="tab-auto" onclick="switchMode('auto')">✦ AUTO</button>
+        </div>
 
-          <!-- MANUAL pane -->
-          <div id="mode-manual">
-            <div id="task-inputs-grid"></div>
-            <div id="task-dispatch-footer">
-              <div id="dispatch-feedback"></div>
-              <button id="stop-all-btn" onclick="stopAll()">■ STOP ALL</button>
-              <button id="dispatch-all-btn" onclick="dispatchAll()">
-                <span>🚀</span> DISPATCH ALL
-              </button>
-            </div>
+        <!-- MANUAL pane -->
+        <div id="mode-manual">
+          <div id="task-inputs-grid"></div>
+          <div id="task-dispatch-footer">
+            <div id="dispatch-feedback"></div>
+            <button id="stop-all-btn" onclick="stopAll()">■ STOP ALL</button>
+            <button id="dispatch-all-btn" onclick="dispatchAll()">
+              <span>🚀</span> DISPATCH ALL
+            </button>
           </div>
+        </div>
 
-          <!-- AUTO pane -->
-          <div id="mode-auto" style="display:none">
-            <div id="auto-hint">Boss วิเคราะห์งานและแจกให้ทีมอัตโนมัติ — ทุกคนไปประชุมที่ whiteboard ก่อน</div>
-            <textarea id="brainstorm-input"
-              placeholder="อธิบายงานที่ต้องการ... Boss จะวิเคราะห์และแบ่งงานให้ทีมเอง"
-              onkeydown="handleBrainstormKey(event)"></textarea>
-            <div id="auto-footer">
-              <div id="brainstorm-feedback"></div>
-              <button id="stop-all-btn-auto" onclick="stopAll()">■ STOP ALL</button>
-              <button id="brainstorm-btn" onclick="doBrainstorm()">✦ BRAINSTORM</button>
-            </div>
-            <div id="brainstorm-plan" style="display:none">
-              <div id="plan-text"></div>
-              <div id="plan-assignments"></div>
-            </div>
+        <!-- AUTO pane -->
+        <div id="mode-auto" style="display:none">
+          <div id="auto-hint">Boss วิเคราะห์งานและแจกให้ทีมอัตโนมัติ — ทุกคนไปประชุมที่ whiteboard ก่อน</div>
+          <textarea id="brainstorm-input"
+            placeholder="อธิบายงานที่ต้องการ... Boss จะวิเคราะห์และแบ่งงานให้ทีมเอง"
+            onkeydown="handleBrainstormKey(event)"></textarea>
+          <div id="auto-footer">
+            <div id="brainstorm-feedback"></div>
+            <button id="stop-all-btn-auto" onclick="stopAll()">■ STOP ALL</button>
+            <button id="brainstorm-btn" onclick="doBrainstorm()">✦ BRAINSTORM</button>
+          </div>
+          <div id="brainstorm-plan" style="display:none">
+            <div id="plan-text"></div>
+            <div id="plan-assignments"></div>
           </div>
         </div>
       </div>
+    </div>
 
+    <!-- Center: Canvas Area -->
+    <div id="canvas-area">
       <!-- Agent Cards -->
       <div id="agent-cards"></div>
       <!-- Pixel Office Canvas -->
       <div id="canvas-wrap">
         <canvas id="office" width="800" height="560"></canvas>
         <div id="zone-labels"></div>
+      </div>
+
+      <!-- Output Panel -->
+      <div id="output-panel">
+        <div id="output-panel-header" onclick="toggleOutputPanel()">
+          <div class="output-panel-title">
+            <span>📄</span>
+            <span>OUTPUT</span>
+          </div>
+          <div id="output-tabs" onclick="event.stopPropagation()"></div>
+          <button id="output-panel-toggle">▲</button>
+        </div>
+        <div id="output-panel-body">
+          <pre id="output-content"></pre>
+        </div>
       </div>
     </div>
 

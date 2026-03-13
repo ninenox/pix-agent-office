@@ -361,6 +361,9 @@ function updateUI() {
     </div>
   `).join("") || '<div style="color:#4b5563;padding:10px;text-align:center">Waiting for activity...</div>';
 
+  // Output panel
+  updateOutputPanel();
+
   // Action target
   const targetEl = document.getElementById("action-target");
   if (selectedAgentId) {
@@ -684,6 +687,78 @@ function toggleTaskPanel() {
   toggle.textContent = isHidden ? "▼" : "▲";
 }
 
+/* ─── Output Panel ─── */
+let selectedOutputAgentId = null;
+
+function selectOutputAgent(id) {
+  selectedOutputAgentId = id;
+  // update active class without rebuilding tabs
+  document.querySelectorAll(".output-tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.agentId === id);
+  });
+  renderOutputContent();
+}
+
+function toggleOutputPanel() {
+  const body = document.getElementById("output-panel-body");
+  const btn = document.getElementById("output-panel-toggle");
+  const isHidden = body.classList.toggle("hidden");
+  btn.textContent = isHidden ? "▼" : "▲";
+}
+
+function initOutputTabs() {
+  const tabsEl = document.getElementById("output-tabs");
+  if (!tabsEl) return;
+  if (!selectedOutputAgentId && agents.length > 0) {
+    selectedOutputAgentId = agents[0].id;
+  }
+  tabsEl.innerHTML = agents.map(a => `
+    <button class="output-tab ${selectedOutputAgentId === a.id ? "active" : ""}"
+      data-agent-id="${a.id}"
+      style="--agent-color:${a.color}"
+      onclick="selectOutputAgent('${a.id}')">
+      <span class="output-tab-dot" id="out-dot-${a.id}"
+        style="width:7px;height:7px;border-radius:50%;display:inline-block;background:#4b5563"></span>
+      ${a.name.split(" ")[1]}
+    </button>
+  `).join("");
+}
+
+function renderOutputContent() {
+  const contentEl = document.getElementById("output-content");
+  if (!contentEl) return;
+  const selected = agents.find(a => a.id === selectedOutputAgentId);
+  if (!selected) return;
+
+  const isRunning = !["idle", "error"].includes(selected.status);
+  if (isRunning) {
+    const newHtml = `<span class="output-running">⏳ ${selected.name.split(" ")[1]} กำลังทำงาน...</span><span class="output-detail"> ${selected.detail || ""}</span>`;
+    if (contentEl.innerHTML !== newHtml) contentEl.innerHTML = newHtml;
+  } else if (selected.output) {
+    if (contentEl.textContent !== selected.output) contentEl.textContent = selected.output;
+  } else {
+    const newHtml = `<span class="output-empty">— ยังไม่มี output สำหรับ ${selected.name.split(" ")[1]} —</span>`;
+    if (contentEl.innerHTML !== newHtml) contentEl.innerHTML = newHtml;
+  }
+}
+
+function updateOutputPanel() {
+  // อัพเดทเฉพาะ dot สี และ content — ไม่ rebuild tabs
+  agents.forEach(a => {
+    const dot = document.getElementById(`out-dot-${a.id}`);
+    if (!dot) return;
+    const isRunning = !["idle", "error"].includes(a.status);
+    const hasOutput = a.output && a.output.length > 0;
+    const dotColor = isRunning ? (STATUS_COLORS[a.status] || a.color) : (hasOutput ? a.color : "#4b5563");
+    dot.style.background = dotColor;
+    dot.style.boxShadow = isRunning ? `0 0 5px ${dotColor}` : "none";
+    // has-output class บน tab
+    const tab = document.querySelector(`.output-tab[data-agent-id="${a.id}"]`);
+    if (tab) tab.classList.toggle("has-output", hasOutput);
+  });
+  renderOutputContent();
+}
+
 /* ─── Init ─── */
 (async function init() {
   // โหลด agent list จาก /team ก่อนเสมอ
@@ -715,6 +790,9 @@ function toggleTaskPanel() {
 
   // Task dispatch panel
   initTaskPanel();
+
+  // Output panel tabs (build once)
+  initOutputTabs();
 
   // Start render loop
   requestAnimationFrame(render);

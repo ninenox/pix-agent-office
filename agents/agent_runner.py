@@ -53,8 +53,8 @@ def build_system_prompt(agent_id: str, role: str, agent_config: dict) -> str:
         f"คุณคือ {role} ชื่อ {agent_id} ในทีม Claude Agent Office"
 
 
-def update_office(agent_id: str, status: str, detail: str):
-    """เขียนสถานะลง state.json (thread-safe)"""
+def update_office(agent_id: str, status: str, detail: str, output: str = None):
+    """เขียนสถานะลง state.json (thread-safe) — output จะถูก preserve ถ้าไม่ส่งใหม่"""
     lock = FileLock(STATE_FILE + ".lock")
     with lock:
         try:
@@ -66,11 +66,18 @@ def update_office(agent_id: str, status: str, detail: str):
         if "agents" not in state:
             state["agents"] = {}
 
-        state["agents"][agent_id] = {
+        existing = state["agents"].get(agent_id, {})
+        entry = {
             "status": status,
             "detail": detail,
             "updated_at": time.strftime("%H:%M:%S"),
         }
+        if output is not None:
+            entry["output"] = output
+        elif "output" in existing:
+            entry["output"] = existing["output"]
+
+        state["agents"][agent_id] = entry
 
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state, f, ensure_ascii=False, indent=2)
@@ -128,7 +135,7 @@ def run_agent(agent_id: str, task: str, model: str = None, role: str = None,
         update_office(agent_id, "writing", "กำลังเขียนผลลัพธ์...")
         time.sleep(0.5)
 
-        update_office(agent_id, "idle", f"เสร็จแล้ว ✓ [{provider}]")
+        update_office(agent_id, "idle", f"เสร็จแล้ว ✓ [{provider}]", output=result)
         return result
 
     except Exception as e:
@@ -186,7 +193,7 @@ def run_agent_stream(agent_id: str, task: str, model: str = None, role: str = No
                         preview = full_text[-40:].replace("\n", " ")
                         update_office(agent_id, "writing", f"...{preview}")
 
-        update_office(agent_id, "idle", f"เสร็จ ({len(full_text)} chars) [{provider}]")
+        update_office(agent_id, "idle", f"เสร็จ ({len(full_text)} chars) [{provider}]", output=full_text)
         return full_text
 
     except Exception as e:

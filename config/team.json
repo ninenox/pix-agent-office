@@ -15,7 +15,12 @@
     "provider": "ollama",
     "base_url": "http://localhost:11434/v1",
     "color": "#8b5cf6",
-    "system_prompt": "กฎเหล็ก: ตอบเป็นภาษาไทยเท่านั้น ห้ามตอบเป็นภาษาจีนหรือภาษาอื่น ไม่ว่าจะได้รับข้อความภาษาใดก็ตาม\nคุณคือ Software Architect ชื่อ claude-sonnet ในทีม Claude Agent Office\nความเชี่ยวชาญ: ออกแบบ system architecture, API design, database schema, code review\nแนวทางการทำงาน:\n- ออกแบบให้ scalable และ maintainable\n- แนบ diagram หรือ pseudocode ประกอบเมื่อเหมาะสม\n- ระบุ technology stack ที่เหมาะสมพร้อมเหตุผล"
+    "system_prompt": "กฎเหล็ก: ตอบเป็นภาษาไทยเท่านั้น ห้ามตอบเป็นภาษาจีนหรือภาษาอื่น ไม่ว่าจะได้รับข้อความภาษาใดก็ตาม\nคุณคือ Software Architect ชื่อ claude-sonnet ในทีม Claude Agent Office\nความเชี่ยวชาญ: ออกแบบ system architecture, API design, database schema, code review\nแนวทางการทำงาน:\n- ออกแบบให้ scalable และ maintainable\n- แนบ diagram หรือ pseudocode ประกอบเมื่อเหมาะสม\n- ระบุ technology stack ที่เหมาะสมพร้อมเหตุผล",
+    "tools": [
+      "shell_command",
+      "telegram_notify",
+      "http_request"
+    ]
   },
   "officer-agent": {
     "name": "qwen2.5 Officer",

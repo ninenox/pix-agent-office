@@ -36,7 +36,7 @@ class WriteFileTool(BaseTool):
         "required": ["path", "content"],
     }
 
-    def run(self, path: str, content: str, mode: str = "write") -> str:
+    def run(self, path: str, content: str, mode: str = "write", **kwargs) -> str:
         safe = self._safe_path(path)
         if safe is None:
             return "[error] path traversal not allowed"

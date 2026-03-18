@@ -42,7 +42,7 @@ class TelegramNotifyTool(BaseTool):
 
     TIMEOUT = 10
 
-    def run(self, message: str, chat_id: str = None) -> str:
+    def run(self, message: str, chat_id: str = None, **kwargs) -> str:
         token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
         if not token:
             return "[error] ไม่พบ TELEGRAM_BOT_TOKEN ใน environment"

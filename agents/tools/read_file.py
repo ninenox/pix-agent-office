@@ -27,7 +27,7 @@ class ReadFileTool(BaseTool):
         "required": ["path"],
     }
 
-    def run(self, path: str) -> str:
+    def run(self, path: str, **kwargs) -> str:
         safe = self._safe_path(path)
         if safe is None:
             return "[error] path traversal not allowed"

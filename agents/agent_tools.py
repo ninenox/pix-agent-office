@@ -138,14 +138,17 @@ def _loop_openai(
     client = get_openai_compatible_client(provider, base_url)
     schemas = registry.schemas("openai", tool_names)
 
-    # เพิ่ม tool instruction และ language enforcement ใน system prompt
+    # วาง tool instruction ไว้ต้น system prompt เพื่อให้ model ให้น้ำหนักมากขึ้น
     tool_instruction = (
-        f"\n\nคุณมี tools พร้อมใช้งาน: {', '.join(tool_names)}\n"
-        "เมื่องานต้องการข้อมูลจากภายนอก ให้เรียกใช้ tool ทันที อย่าปฏิเสธหรืออ้างว่าทำไม่ได้\n"
-        "ตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาจีนหรือภาษาอื่น"
+        f"คุณคือ agent ID: {agent_id}\n"
+        f"คุณมี tools พร้อมใช้งาน: {', '.join(tool_names)}\n"
+        "กฎสำคัญ:\n"
+        "1. เมื่องานต้องการข้อมูลจากภายนอกหรือการกระทำ ให้เรียกใช้ tool ทันที ห้ามตอบเป็นข้อความแทน\n"
+        f"2. ถ้าต้องสร้าง schedule ให้เรียก create_schedule(action='create', agent_id='{agent_id}', ...) เสมอ ต้องใช้ agent_id='{agent_id}' เท่านั้น\n"
+        "3. ตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาจีนหรือภาษาอื่น\n\n"
     )
     messages = [
-        {"role": "system", "content": system + tool_instruction},
+        {"role": "system", "content": tool_instruction + system},
         {"role": "user",   "content": task},
     ]
 
@@ -162,6 +165,22 @@ def _loop_openai(
 
         msg = response.choices[0].message
         tool_calls = msg.tool_calls or []
+
+        # fallback: qwen บางครั้งเขียน tool call เป็นข้อความแทน API tool_calls
+        if not tool_calls and msg.content:
+            tool_calls_text = _extract_text_tool_calls(msg.content)
+            if tool_calls_text:
+                # รัน text-based tool calls แล้วใส่ผลลัพธ์กลับเป็น user message
+                messages.append({"role": "assistant", "content": msg.content})
+                results_text = []
+                for name, args in tool_calls_text:
+                    update_office(agent_id, "coding", f"🔧 {name}(...)")
+                    time.sleep(0.3)
+                    result = registry.execute(name, args)
+                    print(f"  [{agent_id}] tool(text)={name} result={result[:80]}")
+                    results_text.append(f"[{name} result]: {result}")
+                messages.append({"role": "user", "content": "\n".join(results_text)})
+                continue  # ให้ model ตอบต่อหลังได้รับผล tool
 
         if not tool_calls:
             final = msg.content or ""
@@ -189,6 +208,37 @@ def _loop_openai(
 
 
 # ─── Helpers ───
+
+def _extract_text_tool_calls(content: str) -> list[tuple[str, dict]]:
+    """
+    Fallback parser: ดึง tool calls ที่ qwen เขียนเป็นข้อความแทน API tool_calls
+    รองรับรูปแบบ:
+      ```tool_call\n{"name": "...", "arguments": {...}}\n```
+      {"name": "...", "arguments": {...}}
+    """
+    import re
+    results = []
+
+    # รูปแบบ ```tool_call ... ``` หรือ ```json ... ```
+    patterns = [
+        r"```(?:tool_call|json)?\s*(\{.*?\})\s*```",
+        r'<tool_call>\s*(\{.*?\})\s*</tool_call>',
+    ]
+    for pat in patterns:
+        for m in re.finditer(pat, content, re.DOTALL):
+            try:
+                obj = json.loads(m.group(1))
+                name = obj.get("name") or obj.get("function")
+                args = obj.get("arguments") or obj.get("parameters") or {}
+                if isinstance(args, str):
+                    args = json.loads(args)
+                if name and name in registry.names():
+                    results.append((name, args))
+            except Exception:
+                pass
+
+    return results
+
 
 def _fmt_args(args: dict) -> str:
     """สรุป args สั้นๆ สำหรับ log"""

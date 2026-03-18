@@ -29,7 +29,7 @@ class RunPythonTool(BaseTool):
 
     TIMEOUT = 15  # seconds
 
-    def run(self, code: str) -> str:
+    def run(self, code: str, **kwargs) -> str:
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, encoding="utf-8"
         ) as f:

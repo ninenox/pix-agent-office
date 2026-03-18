@@ -37,7 +37,7 @@ class ShellCommandTool(BaseTool):
         "required": ["command"],
     }
 
-    def run(self, command: str) -> str:
+    def run(self, command: str, **kwargs) -> str:
         # ตรวจสอบคำสั่งอันตราย
         cmd_lower = command.lower().strip()
         first_word = cmd_lower.split()[0] if cmd_lower.split() else ""

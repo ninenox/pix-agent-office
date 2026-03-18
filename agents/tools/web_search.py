@@ -35,7 +35,7 @@ class WebSearchTool(BaseTool):
 
     BRAVE_API = "https://api.search.brave.com/res/v1/web/search"
 
-    def run(self, query: str, count: int = 5) -> str:
+    def run(self, query: str, count: int = 5, **kwargs) -> str:
         api_key = os.environ.get("BRAVE_API_KEY", "").strip()
         if not api_key:
             return (

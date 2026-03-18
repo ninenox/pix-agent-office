@@ -82,6 +82,7 @@ class GoogleCalendarTool(BaseTool):
         days: int = 7,
         max_results: int = 20,
         calendar_id: str = "primary",
+        **kwargs,
     ) -> str:
         try:
             service = _get_service()

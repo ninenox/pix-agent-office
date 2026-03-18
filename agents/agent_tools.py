@@ -137,8 +137,15 @@ def _loop_openai(
 ) -> str | None:
     client = get_openai_compatible_client(provider, base_url)
     schemas = registry.schemas("openai", tool_names)
+
+    # เพิ่ม tool instruction และ language enforcement ใน system prompt
+    tool_instruction = (
+        f"\n\nคุณมี tools พร้อมใช้งาน: {', '.join(tool_names)}\n"
+        "เมื่องานต้องการข้อมูลจากภายนอก ให้เรียกใช้ tool ทันที อย่าปฏิเสธหรืออ้างว่าทำไม่ได้\n"
+        "ตอบเป็นภาษาไทยเท่านั้น ห้ามใช้ภาษาจีนหรือภาษาอื่น"
+    )
     messages = [
-        {"role": "system", "content": system},
+        {"role": "system", "content": system + tool_instruction},
         {"role": "user",   "content": task},
     ]
 

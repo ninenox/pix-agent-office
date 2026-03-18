@@ -211,4 +211,10 @@ __marimo__/
 outputs/
 state.json
 
+# Sensitive config — credentials and tokens
+config/google_credentials.json
+config/google_token.json
+config/*.key
+config/*.secret
+
 .DS_Store

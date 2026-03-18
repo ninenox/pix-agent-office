@@ -7,6 +7,7 @@ import os
 import threading
 import time
 from agent_runner import run_agent, run_agent_stream, update_office, load_team_config
+from agent_tools import run_agent_with_tools
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "outputs")
 
@@ -30,7 +31,10 @@ def run_team(tasks: dict, stream: bool = False):
         role = agent_config.get("role", "AI assistant")
 
         try:
-            if stream:
+            tool_names = agent_config.get("tools", [])
+            if tool_names:
+                result = run_agent_with_tools(agent_id, task, model=model, role=role)
+            elif stream:
                 result = run_agent_stream(agent_id, task, model=model, role=role)
             else:
                 result = run_agent(agent_id, task, model=model, role=role)

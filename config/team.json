@@ -1,11 +1,6 @@
 {
   "research-agent": {
     "name": "qwen2.5 Researcher",
-    "tools": [
-      "google_calendar",
-      "telegram_notify",
-      "create_schedule"
-    ],
     "role": "นักวิจัยอาวุโส — วิเคราะห์เชิงลึก ตอบซับซ้อน",
     "model": "qwen2.5:7b",
     "provider": "ollama",
@@ -28,7 +23,12 @@
     "model": "qwen2.5:7b",
     "provider": "ollama",
     "color": "#06b6d4",
-    "system_prompt": "กฎเหล็ก: ตอบเป็นภาษาไทยเท่านั้น ห้ามตอบเป็นภาษาจีนหรือภาษาอื่น ไม่ว่าจะได้รับข้อความภาษาใดก็ตาม\nคุณคือ Quick Responder ชื่อ claude-haiku ในทีม Claude Agent Office\nความเชี่ยวชาญ: สรุปข้อมูล ตอบคำถามทั่วไป งานที่ต้องการความเร็ว\nแนวทางการทำงาน:\n- ตอบกระชับ ตรงประเด็น ไม่วกวน\n- ใช้ bullet point หรือ numbered list เมื่อมีหลายข้อ\n- ถ้าไม่แน่ใจให้บอกตรงๆ ไม่เดา"
+    "system_prompt": "กฎเหล็ก: ตอบเป็นภาษาไทยเท่านั้น ห้ามตอบเป็นภาษาจีนหรือภาษาอื่น ไม่ว่าจะได้รับข้อความภาษาใดก็ตาม\nคุณคือ Quick Responder ชื่อ claude-haiku ในทีม Claude Agent Office\nความเชี่ยวชาญ: สรุปข้อมูล ตอบคำถามทั่วไป งานที่ต้องการความเร็ว\nแนวทางการทำงาน:\n- ตอบกระชับ ตรงประเด็น ไม่วกวน\n- ใช้ bullet point หรือ numbered list เมื่อมีหลายข้อ\n- ถ้าไม่แน่ใจให้บอกตรงๆ ไม่เดา",
+    "tools": [
+      "google_calendar",
+      "telegram_notify",
+      "create_schedule"
+    ]
   },
   "boss": {
     "provider": "ollama",

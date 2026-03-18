@@ -1,4 +1,4 @@
-# Pixel Agent Office 🏢
+# Pix Agent Office 🏢
 
 > [🇹🇭 ภาษาไทย](README.th.md)
 
